@@ -92,3 +92,24 @@ export const logout = (_, res) => {
   res.cookie('jwt', '', { maxAge: 0 });
   res.status(200).json({ message: 'Logged out successfully' });
 };
+// @desc    Update user profile picture
+// @route   PUT /api/user/profile
+// @access  Private
+export const updateProfile = asyncHandler(async (req, res) => {
+  const { profilePic } = req.body;
+  if (!profilePic) {
+    return res.status(400).json({ message: 'Profile pic is required' });
+  }
+
+  const userId = req.user._id;
+
+  const uploadResponse = await cloudinary.uploader.upload(profilePic);
+
+  const updatedUser = await User.findByIdAndUpdate(
+    userId,
+    { profilePic: uploadResponse.secure_url },
+    { new: true }
+  );
+
+  res.status(200).json(updatedUser);
+});
