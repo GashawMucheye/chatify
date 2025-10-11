@@ -1,3 +1,8 @@
+import asyncHandler from 'async-handler';
+import bcrypt from 'bcryptjs';
+import { generateToken } from '../lib/utils.js';
+import { sendWelcomeEmail } from '../emails/emailHandlers.js';
+
 //! @desc    Signup user
 //! @route   POST /api/auth/signup
 //! @access  Public
@@ -49,3 +54,41 @@ export const signup = asyncHandler(async (req, res) => {
     }
   );
 });
+
+//! @desc    Login user
+//! @route   POST /api/auth/login
+//! @access  Public
+export const login = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ message: 'Email and password are required' });
+  }
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.status(400).json({ message: 'Invalid credentials' });
+  }
+
+  const isPasswordCorrect = await bcrypt.compare(password, user.password);
+  if (!isPasswordCorrect) {
+    return res.status(400).json({ message: 'Invalid credentials' });
+  }
+
+  generateToken(user._id, res);
+
+  res.status(200).json({
+    _id: user._id,
+    fullName: user.fullName,
+    email: user.email,
+    profilePic: user.profilePic,
+  });
+});
+
+//! @desc    Logout user
+//! @route   POST /api/auth/logout
+//! @access  Public
+export const logout = (_, res) => {
+  res.cookie('jwt', '', { maxAge: 0 });
+  res.status(200).json({ message: 'Logged out successfully' });
+};
