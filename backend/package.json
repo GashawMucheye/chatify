@@ -12,6 +12,7 @@
   "author": "Gashaw Mucheye",
   "license": "ISC",
   "dependencies": {
+    "async-handler": "^0.0.3",
     "bcryptjs": "^3.0.2",
     "colors": "^1.4.0",
     "cookie-parser": "^1.4.7",
