@@ -3,19 +3,18 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import colors from 'colors';
 import connectDb from './lib/db.js';
-import authRoutes from './routes/auth.routes.js';
 import { ENV } from './lib/env.js';
+import authRoute from './routes/authRoutes.js';
 const app = express();
-const PORT = ENV.PORT || 8080;
-connectDb();
-app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({ origin: ENV.CLIENT_URL, credentials: true }));
 app.use(cookieParser());
-app.use('/api/auth', authRoutes);
-
-app.listen(() =>
+const PORT = ENV.PORT || 8080;
+app.use(express.json());
+app.use('/auth', authRoute);
+app.listen(PORT, () => {
   console.log(
-    `server running on port:http://localhost:${PORT}`.bgYellow.underline
-  )
-);
+    `Server running on port: http://localhost:${PORT}`.bgYellow.underline
+  );
+  connectDb();
+});

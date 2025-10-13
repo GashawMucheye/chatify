@@ -1,13 +1,12 @@
 import { Router } from 'express';
+const router = Router();
+import { protectRoute } from '../middleware/protectRoute.js';
 import {
   login,
   logout,
   signup,
   updateProfile,
-} from '../controllers/auth.controller.js';
-import { protectRoute } from '../middleware/protectRoute.js';
-
-const router = Router();
+} from '../controllers/authController.js';
 
 router.post('/signup', signup);
 router.post('/login', login);

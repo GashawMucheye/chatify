@@ -1,7 +1,9 @@
-import asyncHandler from 'async-handler';
+import asyncHandler from 'express-async-handler';
 import bcrypt from 'bcryptjs';
 import { generateToken } from '../lib/utils.js';
 import { sendWelcomeEmail } from '../emails/emailHandlers.js';
+import User from '../models/user.model.js';
+import { ENV } from '../lib/env.js';
 
 //! @desc    Signup user
 //! @route   POST /api/auth/signup
@@ -92,9 +94,9 @@ export const logout = (_, res) => {
   res.cookie('jwt', '', { maxAge: 0 });
   res.status(200).json({ message: 'Logged out successfully' });
 };
-// @desc    Update user profile picture
-// @route   PUT /api/user/profile
-// @access  Private
+//! @desc    Update user profile picture
+//! @route   PUT /api/user/profile
+//! @access  Private
 export const updateProfile = asyncHandler(async (req, res) => {
   const { profilePic } = req.body;
   if (!profilePic) {
