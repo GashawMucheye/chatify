@@ -1,9 +1,14 @@
 import React from 'react';
+import SignUpPage from './pages/signUpPage';
+import LoginPage from './pages/LoginPage';
+import { Toaster } from 'react-hot-toast';
 
 const App = () => {
   return (
     <div>
-      <h1 className='bg-red-500 min-h-screen'>chatify</h1>
+      <SignUpPage />
+      {/* <LoginPage /> */}
+      <Toaster />
     </div>
   );
 };
