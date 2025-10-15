@@ -1,13 +1,12 @@
 import React from 'react';
-import SignUpPage from './pages/signUpPage';
-import LoginPage from './pages/LoginPage';
+
 import { Toaster } from 'react-hot-toast';
+import MainLayout from './components/MainLayout';
 
 const App = () => {
   return (
     <div>
-      {/* <SignUpPage /> */}
-      <LoginPage />
+      <MainLayout />
       <Toaster />
     </div>
   );
