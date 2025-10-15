@@ -1,7 +1,19 @@
-import React from 'react';
-import { CheckCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { CheckCircle, Loader2 } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
 const LoginPage = () => {
+  const { loginMutation } = useAuth();
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+  });
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    loginMutation.mutate(formData);
+  };
+
   return (
     <div className='min-h-screen bg-base-100 text-base-content  dark:bg-background-dark flex items-center justify-center'>
       <div className='w-full max-w-md'>
@@ -15,7 +27,7 @@ const LoginPage = () => {
             Login to your account
           </h2>
 
-          <form className='space-y-4'>
+          <form className='space-y-4' onSubmit={handleLogin}>
             <div className='form-control'>
               <label className='label sr-only' htmlFor='email-address'>
                 <span className='label-text'>Email address</span>
@@ -24,6 +36,10 @@ const LoginPage = () => {
                 id='email-address'
                 name='email'
                 type='email'
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
                 autoComplete='email'
                 placeholder='Email address'
                 className='input input-bordered w-full'
@@ -39,6 +55,10 @@ const LoginPage = () => {
                 id='password'
                 name='password'
                 type='password'
+                value={formData.password}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
                 autoComplete='current-password'
                 placeholder='Password'
                 className='input input-bordered w-full'
@@ -46,12 +66,20 @@ const LoginPage = () => {
               />
             </div>
 
-            <button type='submit' className='btn btn-primary w-full'>
-              Login
+            <button
+              type='submit'
+              className='btn btn-primary w-full'
+              disabled={loginMutation.isPending}
+            >
+              {loginMutation.isPending ? (
+                <Loader2 className='animate-spin' />
+              ) : (
+                'Login'
+              )}
             </button>
 
             <div className='text-center'>
-              <a href='/login' className='link link-primary text-sm'>
+              <a href='/Signup' className='link link-primary text-sm'>
                 Don't have an account? Sign Up
               </a>
             </div>
