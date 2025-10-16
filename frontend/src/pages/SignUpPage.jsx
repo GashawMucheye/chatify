@@ -1,18 +1,30 @@
 import React, { useState } from 'react';
 import { CheckCircle, Loader2 } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
+// 1. IMPORT FIX: Import the specific useSignup hook
+import { useSignup } from '../hooks/useAuth';
 
 const SignUpPage = () => {
-  const { signupMutation } = useAuth();
+  // 2. HOOK USAGE FIX: Call useSignup and destructure the mutation function and status
+  const { mutate: signup, isPending } = useSignup();
+
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     password: '',
   });
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
+
   const handleSignUp = (e) => {
     e.preventDefault();
-    signupMutation.mutate(formData);
+    // 3. MUTATION CALL FIX: Call the destructured 'signup' function
+    signup(formData);
   };
 
   return (
@@ -35,9 +47,7 @@ const SignUpPage = () => {
                 name='fullName'
                 type='text'
                 value={formData.fullName}
-                onChange={(e) =>
-                  setFormData({ ...formData, fullName: e.target.value })
-                }
+                onChange={handleChange} // Use combined handleChange
                 placeholder='Full name'
                 className='input input-bordered w-full'
               />
@@ -49,9 +59,7 @@ const SignUpPage = () => {
                 name='email'
                 type='email'
                 value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
+                onChange={handleChange} // Use combined handleChange
                 placeholder='Email address'
                 className='input input-bordered w-full'
                 required
@@ -64,9 +72,7 @@ const SignUpPage = () => {
                 name='password'
                 type='password'
                 value={formData.password}
-                onChange={(e) =>
-                  setFormData({ ...formData, password: e.target.value })
-                }
+                onChange={handleChange} // Use combined handleChange
                 placeholder='Password'
                 className='input input-bordered w-full'
                 required
@@ -76,13 +82,10 @@ const SignUpPage = () => {
             <button
               type='submit'
               className='btn btn-primary w-full'
-              disabled={signupMutation.isPending}
+              // 4. LOADING STATE FIX: Use the destructured 'isPending' property
+              disabled={isPending}
             >
-              {signupMutation.isPending ? (
-                <Loader2 className='animate-spin' />
-              ) : (
-                'Sign Up'
-              )}
+              {isPending ? <Loader2 className='animate-spin' /> : 'Sign Up'}
             </button>
 
             <div className='text-center'>

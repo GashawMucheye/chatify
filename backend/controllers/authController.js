@@ -115,3 +115,9 @@ export const updateProfile = asyncHandler(async (req, res) => {
 
   res.status(200).json(updatedUser);
 });
+//check user
+export const checkUser = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const user = await User.findById(userId);
+  res.status(200).json(user);
+});

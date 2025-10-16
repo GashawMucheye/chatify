@@ -1,21 +1,33 @@
 import React, { useState } from 'react';
 import { CheckCircle, Loader2 } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
+// 1. IMPORT FIX: Import the specific useLogin hook
+import { useLogin } from '../hooks/useAuth';
 
 const LoginPage = () => {
-  const { loginMutation } = useAuth();
+  // 2. HOOK USAGE FIX: Call useLogin and destructure the mutation function and status
+  const { mutate: login, isPending } = useLogin();
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
+
   const handleLogin = (e) => {
     e.preventDefault();
-    loginMutation.mutate(formData);
+    // 3. MUTATION CALL FIX: Call the destructured 'login' function
+    login(formData);
   };
 
   return (
-    <div className='min-h-screen bg-base-100 text-base-content  dark:bg-background-dark flex items-center justify-center'>
+    <div className='min-h-screen bg-base-100 text-base-content dark:bg-background-dark flex items-center justify-center'>
       <div className='w-full max-w-md'>
         <div className='card shadow-xl bg-base-200 p-8'>
           <div className='flex justify-center items-center gap-3 mb-4'>
@@ -37,9 +49,7 @@ const LoginPage = () => {
                 name='email'
                 type='email'
                 value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
+                onChange={handleChange} // Use combined handleChange
                 autoComplete='email'
                 placeholder='Email address'
                 className='input input-bordered w-full'
@@ -56,9 +66,7 @@ const LoginPage = () => {
                 name='password'
                 type='password'
                 value={formData.password}
-                onChange={(e) =>
-                  setFormData({ ...formData, password: e.target.value })
-                }
+                onChange={handleChange} // Use combined handleChange
                 autoComplete='current-password'
                 placeholder='Password'
                 className='input input-bordered w-full'
@@ -69,13 +77,10 @@ const LoginPage = () => {
             <button
               type='submit'
               className='btn btn-primary w-full'
-              disabled={loginMutation.isPending}
+              // 4. LOADING STATE FIX: Use the destructured 'isPending' property
+              disabled={isPending}
             >
-              {loginMutation.isPending ? (
-                <Loader2 className='animate-spin' />
-              ) : (
-                'Login'
-              )}
+              {isPending ? <Loader2 className='animate-spin' /> : 'Login'}
             </button>
 
             <div className='text-center'>

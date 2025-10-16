@@ -7,6 +7,7 @@ const keyStrokeSounds = [
 ];
 
 function useKeyboardSound() {
+  // This function can be called multiple times
   const playRandomKeyStrokeSound = () => {
     const randomSound =
       keyStrokeSounds[Math.floor(Math.random() * keyStrokeSounds.length)];
