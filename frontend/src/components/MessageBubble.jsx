@@ -1,7 +1,11 @@
 import React from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 
-function ProfileHeader({ message }) {
+function MessageBubble({ message }) {
+  if (!message) {
+    return null;
+  }
+
   const authUser = useAuthStore((state) => state.authUser);
   const fromMe = message.senderId === authUser?._id;
 
@@ -18,10 +22,8 @@ function ProfileHeader({ message }) {
             src={message.image}
             alt='Image'
             className='max-w-full rounded-lg mt-2 cursor-pointer'
-            // In a real app, you might add a click handler to enlarge the image
           />
         )}
-        {/* Optional: Add a timestamp and optimistic indicator */}
         {message.isOptimistic && (
           <span className='text-xs text-yellow-300 block mt-1'>Sending...</span>
         )}
@@ -30,4 +32,4 @@ function ProfileHeader({ message }) {
   );
 }
 
-export default ProfileHeader;
+export default MessageBubble;

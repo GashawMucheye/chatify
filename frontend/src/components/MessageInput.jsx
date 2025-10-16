@@ -1,165 +1,97 @@
-import { useRef, useState } from 'react';
-import toast from 'react-hot-toast';
-import { ImageIcon, SendIcon, XIcon, Loader2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { SendHorizonal, Image, Loader2 } from 'lucide-react';
+import { useSendMessage } from '../hooks/useChat'; // Assuming this exists
 
-// 1. IMPORT FIX: Import the specific useSendMessage hook
-import { useSendMessage } from '../hooks/useChat';
-// 2. IMPORT FIX: Import the Zustand store for client-side state
-import { useChatStore } from '../store/useChatStore';
-import useKeyboardSound from '../hooks/useKeyboardSound';
-
-function MessageInput() {
-  // 3. ZUSTAND STATE ACCESS: Get state/actions from useChatStore
-  const { isSoundEnabled, selectedUser } = useChatStore((state) => ({
-    isSoundEnabled: state.isSoundEnabled,
-    selectedUser: state.selectedUser,
-  }));
-
-  // 4. HOOK USAGE FIX: Call useSendMessage with the receiverId
-  const receiverId = selectedUser?._id;
-  const {
-    mutate: sendMessage,
-    isPending: isSendingMessage,
-    isError: isSendError,
-  } = useSendMessage(receiverId);
-
-  const { playRandomKeyStrokeSound } = useKeyboardSound();
-
+function MessageInput({ receiverId }) {
   const [text, setText] = useState('');
-  const [imagePreview, setImagePreview] = useState(null);
+  const [image, setImage] = useState(null);
+  const { mutate: sendMessage, isPending } = useSendMessage(receiverId);
 
-  const fileInputRef = useRef(null);
-
-  // 5. Check if the component is ready to send messages
-  const isReady = !!selectedUser;
-
-  const handleSendMessage = (e) => {
+  const handleSend = (e) => {
     e.preventDefault();
+    if (!text.trim() && !image) return;
 
-    // Prevent action if not ready, no content, or already pending
-    if (!isReady || (!text.trim() && !imagePreview) || isSendingMessage) return;
+    sendMessage({ text, image });
 
-    if (isSoundEnabled) playRandomKeyStrokeSound();
-
-    // 6. MUTATION CALL FIX: Call the destructured 'sendMessage' function
-    sendMessage(
-      {
-        text: text.trim(),
-        image: imagePreview,
-      },
-      {
-        // Success handler for cleaning up UI state ONLY
-        onSuccess: () => {
-          setText('');
-          setImagePreview(null);
-          if (fileInputRef.current) fileInputRef.current.value = '';
-        },
-        // The onError is handled inside the useSendMessage hook itself
-      }
-    );
+    // Clear input after sending
+    setText('');
+    setImage(null);
   };
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file');
-      return;
-    }
+  const handleImageUpload = (e) => {
+    const file = e.target?.files?.[0];
+    if (!file) return;
 
     const reader = new FileReader();
-    reader.onloadend = () => setImagePreview(reader.result);
     reader.readAsDataURL(file);
-  };
 
-  const removeImage = () => {
-    setImagePreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    reader.onloadend = () => {
+      setImage(reader.result);
+    };
   };
-
-  // The form is disabled if no user is selected OR if a message is currently sending.
-  const isDisabled =
-    !isReady || isSendingMessage || (!text.trim() && !imagePreview);
 
   return (
-    <div className='p-4 border-t border-slate-700/50'>
-      {imagePreview && (
-        <div className='max-w-3xl mx-auto mb-3 flex items-center'>
-          <div className='relative'>
-            <img
-              src={imagePreview}
-              alt='Preview'
-              className='w-20 h-20 object-cover rounded-lg border border-slate-700'
-            />
-            <button
-              onClick={removeImage}
-              className='absolute -top-2 -right-2 w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-slate-200 hover:bg-slate-700'
-              type='button'
-            >
-              <XIcon className='w-4 h-4' />
-            </button>
-          </div>
+    <form
+      onSubmit={handleSend}
+      className='p-4 border-t border-slate-700/50 flex gap-3 items-center'
+    >
+      {/* Image Preview and Clear Button */}
+      {image && (
+        <div className='relative size-12 rounded-lg overflow-hidden'>
+          <img src={image} alt='Preview' className='size-full object-cover' />
+          <button
+            type='button'
+            onClick={() => setImage(null)}
+            className='absolute top-0 right-0 bg-red-500/80 text-white size-4 flex items-center justify-center text-xs font-bold rounded-bl'
+          >
+            &times;
+          </button>
         </div>
       )}
 
-      <form
-        onSubmit={handleSendMessage}
-        className='max-w-3xl mx-auto flex space-x-4'
+      {/* File Input */}
+      <input
+        type='file'
+        accept='image/*'
+        onChange={handleImageUpload}
+        className='hidden'
+        id='image-upload'
+      />
+
+      {/* Image Upload Button */}
+      <label
+        htmlFor='image-upload'
+        className='cursor-pointer text-slate-400 hover:text-cyan-400 transition-colors'
       >
-        <input
-          type='text'
-          value={text}
-          onChange={(e) => {
-            setText(e.target.value);
-            // Only play sound if sound is enabled
-            isSoundEnabled && playRandomKeyStrokeSound();
-          }}
-          className={`flex-1 bg-slate-800/50 border rounded-lg py-2 px-4 ${
-            isSendError ? 'border-red-500' : 'border-slate-700/50'
-          }`}
-          placeholder={
-            isReady ? 'Type your message...' : 'Select a chat to begin...'
-          }
-          disabled={!isReady || isSendingMessage}
-        />
+        <Image className='size-6' />
+      </label>
 
-        <input
-          type='file'
-          accept='image/*'
-          ref={fileInputRef}
-          onChange={handleImageChange}
-          className='hidden'
-          disabled={!isReady || isSendingMessage}
-        />
+      {/* Text Input */}
+      <input
+        type='text'
+        placeholder='Type a message...'
+        className='flex-1 p-3 bg-slate-700/50 rounded-lg text-slate-200 placeholder:text-slate-400 focus:ring-2 focus:ring-cyan-500 outline-none transition-shadow'
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        disabled={isPending}
+      />
 
-        <button
-          type='button'
-          onClick={() => fileInputRef.current?.click()}
-          className={`bg-slate-800/50 text-slate-400 hover:text-slate-200 rounded-lg px-4 transition-colors 
-                        ${imagePreview ? 'text-cyan-500' : ''}
-                        ${
-                          !isReady || isSendingMessage
-                            ? 'opacity-50 cursor-not-allowed'
-                            : ''
-                        }
-                    `}
-          disabled={!isReady || isSendingMessage}
-        >
-          <ImageIcon className='w-5 h-5' />
-        </button>
-
-        <button
-          type='submit'
-          disabled={isDisabled}
-          className='bg-gradient-to-r from-cyan-500 to-cyan-600 text-white rounded-lg px-4 py-2 font-medium hover:from-cyan-600 hover:to-cyan-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed'
-        >
-          {isSendingMessage ? (
-            <Loader2 className='w-5 h-5 animate-spin' />
-          ) : (
-            <SendIcon className='w-5 h-5' />
-          )}
-        </button>
-      </form>
-    </div>
+      {/* Send Button */}
+      <button
+        type='submit'
+        className={`p-3 rounded-lg bg-cyan-600 text-white hover:bg-cyan-700 transition-colors ${
+          isPending ? 'opacity-50 cursor-not-allowed' : ''
+        }`}
+        disabled={isPending}
+      >
+        {isPending ? (
+          <Loader2 className='size-6 animate-spin' />
+        ) : (
+          <SendHorizonal className='size-6' />
+        )}
+      </button>
+    </form>
   );
 }
+
 export default MessageInput;

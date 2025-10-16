@@ -1,11 +1,11 @@
 import React from 'react';
 import UsersLoadingSkeleton from './UsersLoadingSkeleton';
-import NoChatsFound from './NoChatsFound';
 
 // 1. IMPORT FIX: Import specific hooks and stores
 import { useMyChatPartners } from '../hooks/useChat'; // TanStack Query hook
 import { useChatStore } from '../store/useChatStore'; // Zustand store for setSelectedUser
 import { useAuthStore } from '../store/useAuthStore'; // Zustand store for onlineUsers
+import NoChatsFound from './NoChatFound';
 
 const ChatsList = () => {
   // 2. HOOK USAGE FIX: Fetch chats using the TanStack Query hook

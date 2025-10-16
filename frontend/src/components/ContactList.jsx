@@ -11,6 +11,7 @@ const ContactList = () => {
   const { data: contacts, isLoading, isError } = useAllContacts();
 
   // 3. ZUSTAND STATE ACCESS: Get state and action from the stores
+  // These selectors are safe as they only return a single reference.
   const setSelectedUser = useChatStore((state) => state.setSelectedUser);
   const onlineUsers = useAuthStore((state) => state.onlineUsers);
 
