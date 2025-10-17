@@ -1,47 +1,41 @@
-import React from 'react';
+import { useChatStore } from '../hooks/useChatStore'; // Updated path for simplified store
+import { useAuthStore } from '../hooks/useAuthStore'; // Updated path for auth store
 import UsersLoadingSkeleton from './UsersLoadingSkeleton';
+import { useAllContacts } from '../hooks/useChatQueries'; // Import the new React Query hook
 
-// 1. IMPORT FIX: Import specific hooks and store
-import { useAllContacts } from '../hooks/useChat'; // TanStack Query hook
-import { useChatStore } from '../store/useChatStore'; // Zustand store for setSelectedUser
-import { useAuthStore } from '../store/useAuthStore'; // Zustand store for onlineUsers (where socket state lives)
+function ContactList() {
+  // 1. REACT QUERY HOOK: Use the query hook to fetch contacts
+  const { data: allContacts, isLoading, isError, error } = useAllContacts(); // 2. ZUSTAND HOOK: Get only the local state and action we still need from Zustand
 
-const ContactList = () => {
-  // 2. HOOK USAGE FIX: Fetch contacts using the TanStack Query hook
-  const { data: contacts, isLoading, isError } = useAllContacts();
+  const { setSelectedUser } = useChatStore();
+  const { onlineUsers } = useAuthStore(); // 3. ERROR HANDLING (useEffect for side effects like toasts)
 
-  // 3. ZUSTAND STATE ACCESS: Get state and action from the stores
-  // These selectors are safe as they only return a single reference.
-  const setSelectedUser = useChatStore((state) => state.setSelectedUser);
-  const onlineUsers = useAuthStore((state) => state.onlineUsers);
+  if (isLoading) {
+    return <UsersLoadingSkeleton />;
+  } // Handle case where data might not exist (though placeholderData: [] should prevent this)
 
-  // Check loading state from the query hook
-  if (isLoading) return <UsersLoadingSkeleton />;
-
-  // Handle error case
-  if (isError)
-    return <div className='p-4 text-red-400'>Error loading contacts.</div>;
-
-  // Use the data returned by the query
-  const contactsToDisplay = contacts || [];
-
+  if (!allContacts) {
+    return <p className='text-center text-gray-500'>No contacts available.</p>;
+  } // 5. RENDER LIST: Use the data returned from the query
   return (
     <>
-      {contactsToDisplay.map((contact) => (
+      {allContacts.map((contact) => (
         <div
           key={contact._id}
-          className='bg-cyan-500/10 p-4 rounded-lg cursor-pointer hover:bg-cyan-500/20 transition-colors'
-          onClick={() => setSelectedUser(contact)} // Action from Zustand
+          className='bg-cyan-500/10 p-4 rounded-lg cursor-pointer hover:bg-cyan-500/20 transition-colors' // 6. ACTION: Still use the Zustand action for local selection
+          onClick={() => setSelectedUser(contact)}
         >
           <div className='flex items-center gap-3'>
             <div
               className={`avatar ${
-                // Use onlineUsers state from useAuthStore
                 onlineUsers.includes(contact._id) ? 'online' : 'offline'
               }`}
             >
               <div className='size-12 rounded-full'>
-                <img src={contact.profilePic || '/avatar.png'} alt='avatar' />
+                <img
+                  src={contact.profilePic || '/avatar.png'}
+                  alt={contact.fullName}
+                />
               </div>
             </div>
             <h4 className='text-slate-200 font-medium'>{contact.fullName}</h4>
@@ -50,6 +44,5 @@ const ContactList = () => {
       ))}
     </>
   );
-};
-
+}
 export default ContactList;

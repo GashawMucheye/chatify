@@ -1,149 +1,144 @@
-// useAuth.js
-
+// src/hooks/useAuth.js
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { axiosInstance } from '../lib/axios'; // Adjust path as needed
+import { useAuthStore } from './useAuthStore';
 import toast from 'react-hot-toast';
-import { axiosInstance } from '../lib/axios'; // Make sure this path is correct
-import { useAuthStore } from '../store/useAuthStore';
 
-const USER_QUERY_KEY = 'authUser'; // A consistent key for the authenticated user data
+// --- API Functions ---
+const checkAuthFn = async () => {
+  const res = await axiosInstance.get('/auth/check');
+  return res.data; // Return the user data
+};
+
+const signupFn = async (data) => {
+  const res = await axiosInstance.post('/auth/signup', data);
+  return res.data;
+};
+
+const loginFn = async (data) => {
+  const res = await axiosInstance.post('/auth/login', data);
+  return res.data;
+};
+
+const logoutFn = async () => {
+  await axiosInstance.post('/auth/logout');
+  return null; // Indicate successful logout
+};
+
+const updateProfileFn = async (data) => {
+  const res = await axiosInstance.put('/auth/update-profile', data);
+  return res.data;
+};
+
+// --- React Query Hooks ---
 
 /**
- * Hook to check the user's authentication status.
- * Uses useQuery for fetching.
+ * 1. Auth Check Query
+ * Replaces the checkAuth action. Fetches the authenticated user.
  */
 export const useCheckAuth = () => {
-  const { setAuthUser, connectSocket, disconnectSocket } = useAuthStore();
-  const queryClient = useQueryClient();
+  const setAuthUser = useAuthStore((state) => state.setAuthUser);
 
   return useQuery({
-    queryKey: [USER_QUERY_KEY],
-    queryFn: async () => {
-      const res = await axiosInstance.get('/auth/check');
-      return res.data; // The user object
+    queryKey: ['authUser'],
+    queryFn: checkAuthFn,
+    retry: false, // Don't retry on error, as it likely means no auth
+    initialData: null, // Start with null until query runs
+    onSuccess: (data) => {
+      setAuthUser(data); // Update Zustand store on success
     },
-    // Configuration for the query:
-    staleTime: Infinity, // The user data is "fresh" until the user logs out or updates their profile
-    refetchOnWindowFocus: false, // Prevents unnecessary checks on tab focus
-
-    // What to do on a successful fetch (when data is returned)
-    onSuccess: (user) => {
-      setAuthUser(user);
-      connectSocket(); // Connect socket only if auth is successful
-    },
-
-    // What to do on an error (e.g., user is not authenticated)
     onError: (error) => {
-      // Clear the user from the store if the check fails
-      setAuthUser(null);
-      disconnectSocket();
-      // Optionally invalidate the query to ensure it tries again later if needed
-      queryClient.invalidateQueries({ queryKey: [USER_QUERY_KEY] });
-    },
+      console.log('Error in authCheck:', error);
+      setAuthUser(null); // Clear user on error
+    }, // `isCheckingAuth` is now replaced by `isLoading` or `isPending`
   });
 };
 
 /**
- * Hook to handle user sign-up.
- * Uses useMutation for side effects.
+ * 2. Signup Mutation
+ * Replaces the signup action.
  */
 export const useSignup = () => {
-  const { setAuthUser, connectSocket } = useAuthStore();
   const queryClient = useQueryClient();
+  const setAuthUser = useAuthStore((state) => state.setAuthUser);
 
   return useMutation({
-    mutationFn: async (data) => {
-      const res = await axiosInstance.post('/auth/signup', data);
-      return res.data; // The new user object
-    },
-    onSuccess: (user) => {
-      setAuthUser(user);
-      connectSocket();
-      // Update the user query cache so the app knows the user is logged in
-      queryClient.setQueryData([USER_QUERY_KEY], user);
+    mutationFn: signupFn,
+    onSuccess: (newUserData) => {
+      // Invalidate the 'authUser' query to refetch or update its cache
+      queryClient.setQueryData(['authUser'], newUserData);
+      setAuthUser(newUserData);
       toast.success('Account created successfully!');
     },
     onError: (error) => {
-      const message = error.response?.data?.message || 'Signup failed';
-      toast.error(message);
-    },
+      toast.error(error.response?.data?.message || 'Signup failed');
+    }, // `isSigningUp` is now replaced by `isPending` or `isMutating`
   });
 };
 
 /**
- * Hook to handle user login.
- * Uses useMutation for side effects.
+ * 3. Login Mutation
+ * Replaces the login action.
  */
 export const useLogin = () => {
-  const { setAuthUser, connectSocket } = useAuthStore();
   const queryClient = useQueryClient();
+  const setAuthUser = useAuthStore((state) => state.setAuthUser);
 
   return useMutation({
-    mutationFn: async (data) => {
-      const res = await axiosInstance.post('/auth/login', data);
-      return res.data; // The logged-in user object
-    },
-    onSuccess: (user) => {
-      setAuthUser(user);
-      connectSocket();
-      queryClient.setQueryData([USER_QUERY_KEY], user);
+    mutationFn: loginFn,
+    onSuccess: (newUserData) => {
+      queryClient.setQueryData(['authUser'], newUserData);
+      setAuthUser(newUserData);
       toast.success('Logged in successfully');
     },
     onError: (error) => {
-      const message = error.response?.data?.message || 'Login failed';
-      toast.error(message);
-    },
+      toast.error(error.response?.data?.message || 'Login failed');
+    }, // `isLoggingIn` is now replaced by `isPending` or `isMutating`
   });
 };
 
 /**
- * Hook to handle user logout.
- * Uses useMutation for side effects.
+ * 4. Logout Mutation
+ * Replaces the logout action.
  */
 export const useLogout = () => {
-  const { clearAuthUser, disconnectSocket } = useAuthStore();
   const queryClient = useQueryClient();
+  const setAuthUser = useAuthStore((state) => state.setAuthUser);
 
   return useMutation({
-    mutationFn: async () => {
-      await axiosInstance.post('/auth/logout');
-    },
+    mutationFn: logoutFn,
     onSuccess: () => {
-      clearAuthUser();
-      disconnectSocket();
-      // Remove the user from the cache upon successful logout
-      queryClient.setQueryData([USER_QUERY_KEY], null);
+      // Clear the 'authUser' cache and update Zustand
+      queryClient.setQueryData(['authUser'], null);
+      setAuthUser(null);
       toast.success('Logged out successfully');
     },
     onError: (error) => {
-      console.log('Logout error:', error);
       toast.error('Error logging out');
+      console.log('Logout error:', error);
     },
   });
 };
 
 /**
- * Hook to update the user's profile.
- * Uses useMutation for side effects.
+ * 5. Update Profile Mutation
+ * Replaces the updateProfile action.
  */
 export const useUpdateProfile = () => {
-  const { setAuthUser } = useAuthStore();
   const queryClient = useQueryClient();
+  const setAuthUser = useAuthStore((state) => state.setAuthUser);
 
   return useMutation({
-    mutationFn: async (data) => {
-      const res = await axiosInstance.put('/auth/update-profile', data);
-      return res.data; // The updated user object
-    },
-    onSuccess: (updatedUser) => {
-      setAuthUser(updatedUser);
-      // Update the user data in the cache to reflect the changes immediately
-      queryClient.setQueryData([USER_QUERY_KEY], updatedUser);
+    mutationFn: updateProfileFn,
+    onSuccess: (updatedUserData) => {
+      // Update the cached 'authUser' data directly
+      queryClient.setQueryData(['authUser'], updatedUserData);
+      setAuthUser(updatedUserData);
       toast.success('Profile updated successfully');
     },
     onError: (error) => {
       console.log('Error in update profile:', error);
-      const message = error.response?.data?.message || 'Profile update failed';
-      toast.error(message);
+      toast.error(error.response?.data?.message || 'Profile update failed');
     },
   });
 };

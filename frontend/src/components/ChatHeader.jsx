@@ -1,46 +1,34 @@
 import { XIcon } from 'lucide-react';
+import { useChatStore } from '../hooks/useChatStore'; // Fixed path
 import { useEffect } from 'react';
-
-// 1. IMPORT FIX: Import Zustand stores for state and actions
-import { useChatStore } from '../store/useChatStore';
-import { useAuthStore } from '../store/useAuthStore';
+import { useAuthStore } from '../hooks/useAuthStore'; // Fixed path
 
 function ChatHeader() {
-  // 2. ZUSTAND STATE ACCESS: Get state and actions directly from the stores
-  const { selectedUser, setSelectedUser } = useChatStore((state) => ({
-    selectedUser: state.selectedUser,
-    setSelectedUser: state.setSelectedUser,
-  }));
+  const { selectedUser, setSelectedUser } = useChatStore();
+  const { onlineUsers } = useAuthStore(); // --- CRITICAL FIX: Handle case where selectedUser is null ---
 
-  const onlineUsers = useAuthStore((state) => state.onlineUsers);
+  if (!selectedUser) {
+    // If no user is selected, don't render the header.
+    return null;
+  } // Calculate derived state only after confirming selectedUser exists
 
-  // Safety check: This component should only render if selectedUser exists.
-  if (!selectedUser) return null;
-
-  // Determine online status
   const isOnline = onlineUsers.includes(selectedUser._id);
 
   useEffect(() => {
     const handleEscKey = (event) => {
-      // Check if the user is currently selected before attempting to clear
+      // Only call setSelectedUser(null) if a user is currently selected
       if (event.key === 'Escape' && selectedUser) {
         setSelectedUser(null);
       }
     };
 
-    window.addEventListener('keydown', handleEscKey);
+    window.addEventListener('keydown', handleEscKey); // cleanup function
 
-    // cleanup function
     return () => window.removeEventListener('keydown', handleEscKey);
-
-    // Depend on setSelectedUser (Zustand action, stable) and selectedUser (state)
-  }, [setSelectedUser, selectedUser]);
+  }, [setSelectedUser, selectedUser]); // Include selectedUser in dependency array for cleanup logic safety
 
   return (
-    <div
-      className='flex justify-between items-center bg-slate-800/50 border-b
-                border-slate-700/50 max-h-[84px] px-6 flex-1'
-    >
+    <div className='flex justify-between items-center bg-slate-800/50 border-b border-slate-700/50 max-h-[84px] px-6 flex-1'>
       <div className='flex items-center space-x-3'>
         <div className={`avatar ${isOnline ? 'online' : 'offline'}`}>
           <div className='w-12 rounded-full'>
@@ -50,7 +38,6 @@ function ChatHeader() {
             />
           </div>
         </div>
-
         <div>
           <h3 className='text-slate-200 font-medium'>
             {selectedUser.fullName}
